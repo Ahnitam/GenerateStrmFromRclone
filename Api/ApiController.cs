@@ -26,14 +26,21 @@ namespace GenerateStrmFromRclone.Api
         public IActionResult GetNetworksInterfaces()
         {
             List<Dictionary<string, dynamic?>> interfaces = new List<Dictionary<string, dynamic?>>();
-
-            foreach (var ip in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
+            try
             {
-                interfaces.Add(new Dictionary<string, dynamic?> {
-                    { "address", ip.ToString() },
-                    { "addressFamily", ip.AddressFamily.ToString() }
-                });
+                foreach (var ip in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
+                {
+                    interfaces.Add(new Dictionary<string, dynamic?> {
+                        { "address", ip.ToString() },
+                        { "addressFamily", ip.AddressFamily.ToString() }
+                    });
+                }
             }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString(), e);
+            }
+            
             return Ok(interfaces);
         }
 

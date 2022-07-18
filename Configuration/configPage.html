@@ -83,6 +83,8 @@
                 pluginUniqueId: 'ba40fc1c-12fd-438e-a0d0-504fada2347c'
             };
 
+            let config = await ApiClient.getPluginConfiguration(GenerateStrmConfig.pluginUniqueId);
+
             async function getRcloneDrives(rclone, rcloneConfig) {
                 if (rclone == null || rcloneConfig == null) {
                     return [];
@@ -98,7 +100,6 @@
             async function _init() {
                 try {
                     Dashboard.showLoadingMsg();
-                    let config = await ApiClient.getPluginConfiguration(GenerateStrmConfig.pluginUniqueId);
                     let networkInterfaces = await ApiClient.fetch({
                         url: ApiClient.getUrl('/GenerateStrmFromRclone/getNetworksInterfaces'),
                         type: 'GET',
@@ -144,9 +145,11 @@
             }
 
             function onSelectIpChange() {
+
                 let selectInterfaces = $("#rcloneServeIp");
                 if (selectInterfaces.val() === "") {
                     $('#selectServerIp').append('<input id="rcloneServeIpCustom" name="rcloneServeIpCustom" type="text" is="emby-input" />');
+                    $('#rcloneServeIpCustom').val(config.rcloneServeIP ?? "");
                 } else {
                     $('#rcloneServeIpCustom').remove();
                 }
@@ -276,7 +279,7 @@
                         throw new Error(validate);
                     }
                     console.log("Salvando Configurações");
-                    let config = await ApiClient.getPluginConfiguration(GenerateStrmConfig.pluginUniqueId);
+                    
                     config.rcloneServeIP = $('#rcloneServeIp').val();
                     config.rcloneServePort = $('#rcloneServePort').val();
                     config.rcloneRcPort = $('#rcloneRcPort').val();
