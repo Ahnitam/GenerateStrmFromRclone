@@ -83,7 +83,7 @@
                 pluginUniqueId: 'ba40fc1c-12fd-438e-a0d0-504fada2347c'
             };
 
-            let config = await ApiClient.getPluginConfiguration(GenerateStrmConfig.pluginUniqueId);
+            var config = null;
 
             async function getRcloneDrives(rclone, rcloneConfig) {
                 if (rclone == null || rcloneConfig == null) {
@@ -98,6 +98,7 @@
                 }
             }
             async function _init() {
+                config = await ApiClient.getPluginConfiguration(GenerateStrmConfig.pluginUniqueId);
                 try {
                     Dashboard.showLoadingMsg();
                     let networkInterfaces = await ApiClient.fetch({
