@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyVersion>10.8.1.1</AssemblyVersion>
-    <FileVersion>10.8.1.1</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.8.1" />
-    <PackageReference Include="Jellyfin.Model" Version="10.8.1" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.8.0" />
+    <PackageReference Include="Jellyfin.Model" Version="10.8.0" />
   </ItemGroup>
 
   <ItemGroup>

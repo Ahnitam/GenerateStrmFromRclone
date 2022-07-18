@@ -281,7 +281,7 @@
                     }
                     console.log("Salvando Configurações");
                     
-                    config.rcloneServeIP = $('#rcloneServeIp').val();
+                    config.rcloneServeIP = $('#rcloneServeIp').val() != "" ? $('#rcloneServeIp').val() : $('#rcloneServeIpCustom').val();
                     config.rcloneServePort = $('#rcloneServePort').val();
                     config.rcloneRcPort = $('#rcloneRcPort').val();
                     config.rclonePATH = $('#rclonePATH').val();
