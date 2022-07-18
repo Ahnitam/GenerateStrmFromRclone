@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Generate Strm</title>
+</head>
+
+<body>
+    <div id="GenerateStrmConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+        data-require="emby-input,emby-button,emby-select,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="GenerateStrmConfigForm">
+                    <h3>Server</h3>
+                    <div id="selectServerIp" class="selectContainer">
+                        <label class="selectLabel" for="rcloneServeIp">IP (Rclone serve)</label>
+                        <select is="emby-select" id="rcloneServeIp" name="rcloneServeIp"
+                            class="emby-select-withcolor emby-select" onchange="onSelectIpChange()">
+                            <option value="" selected>Custom</option>
+                        </select>
+                        <input id="rcloneServeIpCustom" name="rcloneServeIp" type="text" is="emby-input" />
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputeLabel inputLabelUnfocused" for="rcloneServePort">Porta (Rclone
+                            serve)</label>
+                        <input id="rcloneServePort" name="rcloneServePort" type="number" is="emby-input" />
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputeLabel inputLabelUnfocused" for="rcloneRcPort">Porta (Rclone rc)</label>
+                        <input id="rcloneRcPort" name="rcloneRcPort" type="number" is="emby-input" />
+                    </div>
+                    <h3>Rclone Config</h3>
+                    <div class="inputContainer">
+                        <label class="inputeLabel inputLabelUnfocused" for="rclonePATH">Diretorio do rclone: </label>
+                        <input id="rclonePATH" name="rclonePATH" type="text" is="emby-input" />
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputeLabel inputLabelUnfocused" for="rcloneConfigPATH">Arquivo de configuração
+                            rclone: </label>
+                        <input id="rcloneConfigPATH" name="rcloneConfigPATH" type="text" is="emby-input" />
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputeLabel inputLabelUnfocused" for="rcloneMediaPATH">Caminho onde os arquivos
+                            STRM serão salvos</label>
+                        <input id="rcloneMediaPATH" name="rcloneMediaPATH" type="text" is="emby-input" />
+                        <div class="fieldDescription">Lembre-se de dar permissões para essa pasta</div>
+                    </div>
+                    <hr>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="rcloneRemoteDrive">Drive</label>
+                        <select is="emby-select" id="rcloneRemoteDrive" name="rcloneRemoteDrive"
+                            class="emby-select-withcolor emby-select">
+                            <option value="" selected>Selecione um drive remoto</option>
+                        </select>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputeLabel inputLabelUnfocused" for="rcloneDrivePATH">Caminho do drive onde será
+                            feita a leitura (deixe em branco para raiz)</label>
+                        <input id="rcloneDrivePATH" name="rcloneDrivePATH" type="text" is="emby-input" />
+                    </div>
+                    <div>
+                        <button id="atualizarDrives" is="emby-button" type="submit"
+                            class="raised button-submit block emby-button">
+                            <span>Atualizar Lista de Drives</span>
+                        </button>
+                    </div>
+                    <hr>
+                    <br>
+                    <div>
+                        <button id="saveConfig" is="emby-button" type="submit"
+                            class="raised button-submit block emby-button">
+                            <span>Salvar</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var GenerateStrmConfig = {
+                pluginUniqueId: 'ba40fc1c-12fd-438e-a0d0-504fada2347c'
+            };
+
+            async function getRcloneDrives(rclone, rcloneConfig) {
+                if (rclone == null || rcloneConfig == null) {
+                    return [];
+                } else {
+                    let result = await ApiClient.fetch({
+                        url: ApiClient.getUrl('/GenerateStrmFromRclone/getRcloneDrives?' + encodeURIComponent("rclone=" + rclone + "&rcloneConfig=" + rcloneConfig)),
+                        type: 'GET',
+                    });
+                    let json = await result.json();
+                    return json;
+                }
+            }
+            async function _init() {
+                try {
+                    Dashboard.showLoadingMsg();
+                    let config = await ApiClient.getPluginConfiguration(GenerateStrmConfig.pluginUniqueId);
+                    let networkInterfaces = await ApiClient.fetch({
+                        url: ApiClient.getUrl('/GenerateStrmFromRclone/getNetworksInterfaces'),
+                        type: 'GET',
+                        headers: { accept: "application/json" }
+                    });
+                    let rcloneDrives = await getRcloneDrives(config.rclonePATH, config.rcloneConfigPATH);
+
+                    $('#rcloneServeIpCustom').val(config.rcloneServeIP ?? "");
+                    $('#rcloneServePort').val(config.rcloneServePort ?? "");
+                    $('#rcloneRcPort').val(config.rcloneRcPort ?? "");
+                    $('#rclonePATH').val(config.rclonePATH ?? "");
+                    $('#rcloneConfigPATH').val(config.rcloneConfigPATH ?? "");
+                    $('#rcloneDrivePATH').val(config.rcloneDrivePATH ?? "");
+                    $('#rcloneMediaPATH').val(config.rcloneMediaPATH ?? "");
+
+
+                    let selectInterfaces = $('#rcloneServeIp');
+                    networkInterfaces.forEach(function (option) {
+                        let optionElement = document.createElement('option');
+                        optionElement.value = option.address;
+                        optionElement.text = option.address + " - " + option.addressFamily;
+                        selectInterfaces.append(optionElement);
+                        if (option.address == config.rcloneServeIP) {
+                            selectInterfaces.val(option.address).change();
+                        }
+                    });
+                    let selectDrives = $('#rcloneRemoteDrive');
+                    rcloneDrives.forEach(function (option) {
+                        let optionElement = document.createElement('option');
+                        optionElement.selected = option.drive == config.rcloneRemoteDrive;
+                        optionElement.value = option.drive;
+                        optionElement.text = option.drive;
+                        selectDrives.append(optionElement);
+                        if (option.drive == config.rcloneRemoteDrive) {
+                            selectDrives.val(option.drive).change();
+                        }
+                    });
+                } catch (error) {
+                    console.error(error);
+                } finally {
+                    Dashboard.hideLoadingMsg();
+                }
+            }
+
+            function onSelectIpChange() {
+                let selectInterfaces = $("#rcloneServeIp");
+                if (selectInterfaces.val() === "") {
+                    $('#selectServerIp').append('<input id="rcloneServeIpCustom" name="rcloneServeIpCustom" type="text" is="emby-input" />');
+                } else {
+                    $('#rcloneServeIpCustom').remove();
+                }
+            }
+
+            function disableInputs() {
+                $('#rcloneServeIp').prop('disabled', true);
+                $('#rcloneServePort').prop('disabled', true);
+                $('#rcloneRcPort').prop('disabled', true);
+                $('#rclonePATH').prop('disabled', true);
+                $('#rcloneConfigPATH').prop('disabled', true);
+                $('#rcloneDrivePATH').prop('disabled', true);
+                $('#rcloneMediaPATH').prop('disabled', true);
+                $('#rcloneRemoteDrive').prop('disabled', true);
+                $('#atualizarDrives').prop('disabled', true);
+                $('#rcloneServeIpCustom').prop('disabled', true);
+
+            }
+            function enableInputs() {
+                $('#rcloneServeIp').prop('disabled', false);
+                $('#rcloneServePort').prop('disabled', false);
+                $('#rcloneRcPort').prop('disabled', false);
+                $('#rclonePATH').prop('disabled', false);
+                $('#rcloneConfigPATH').prop('disabled', false);
+                $('#rcloneDrivePATH').prop('disabled', false);
+                $('#rcloneMediaPATH').prop('disabled', false);
+                $('#rcloneRemoteDrive').prop('disabled', false);
+                $('#atualizarDrives').prop('disabled', false);
+                $('#rcloneServeIpCustom').prop('disabled', false);
+            }
+
+            async function fileExists(file) {
+                let result = await ApiClient.fetch({
+                    url: ApiClient.getUrl('/GenerateStrmFromRclone/fileExists?' + encodeURIComponent("file=" + file)),
+                    type: 'GET',
+                });
+                let json = await result.json();
+                return json.exists;
+            }
+
+            async function folderExists(folder) {
+                let result = await ApiClient.fetch({
+                    url: ApiClient.getUrl('/GenerateStrmFromRclone/folderExists?' + encodeURIComponent("folder=" + folder)),
+                    type: 'GET',
+                });
+                let json = await result.json();
+                return json.exists;
+            }
+
+            async function driveExists(rclone, rcloneConfig, drive, path) {
+                let result = await ApiClient.fetch({
+                    url: ApiClient.getUrl('/GenerateStrmFromRclone/driveExists?' + encodeURIComponent("rclone=" + rclone + "&rcloneConfig=" + rcloneConfig + "&drive=" + drive + (path == null | typeof path === "undefined" ? "" : "&drivePath=" + path))),
+                    type: 'GET',
+                });
+                let json = await result.json();
+                return json.exists;
+            }
+
+            async function saveValidate() {
+                let text = "";
+                let validate = [];
+                if ($('#rcloneServeIp').val() === "" && $('#rcloneServeIpCustom').val() === "") {
+                    validate.push("Preencha Corretamente o IP do servidor");
+                }
+                if ($('#rcloneServePort').val() === "") {
+                    validate.push("Preencha Corretamente a Porta do Rclone Server");
+                }
+                if ($('#rcloneRcPort').val() === "") {
+                    validate.push("Preencha Corretamente a Porta do Rclone Rc");
+                }
+                if ($('#rclonePATH').val() === "") {
+                    validate.push("Preencha Corretamente o caminho do Rclone");
+                } else if (!(await fileExists($('#rclonePATH').val()))) {
+                    validate.push("O caminho do Rclone não existe");
+                }
+                if ($('#rcloneConfigPATH').val() === "") {
+                    validate.push("Preencha Corretamente o caminho do Rclone Config");
+                } else if (!(await fileExists($('#rcloneConfigPATH').val()))) {
+                    validate.push("O arquivo de configuração do Rclone não existe");
+                }
+                if ($('#rcloneMediaPATH').val() === "") {
+                    validate.push("Preencha Corretamente o caminho dos STRMs");
+                } else if (!(await folderExists($('#rcloneMediaPATH').val()))) {
+                    validate.push("O caminho dos STRMs não existe");
+                }
+                if ($('#rcloneRemoteDrive').val() === "") {
+                    validate.push("Selecione um Drive Remoto");
+                } else if (!(await driveExists($('#rclonePATH').val(), $('#rcloneConfigPATH').val(), $('#rcloneRemoteDrive').val()))) {
+                    validate.push("O Drive Remoto não existe, atualize a lista de Drives");
+                }
+                if (!(await driveExists($('#rclonePATH').val(), $('#rcloneConfigPATH').val(), $('#rcloneRemoteDrive').val(), $('#rcloneDrivePATH').val()))) {
+                    validate.push("O caminho do Drive Remoto não existe");
+                }
+
+                validate.forEach(function (option) {
+                    text += option + "\n";
+                });
+                return text;
+            }
+            async function atualizarDrivesValidate() {
+                let text = "";
+                let validate = [];
+
+                if ($('#rclonePATH').val() === "") {
+                    validate.push("Preencha Corretamente o caminho do Rclone");
+                } else if (!(await fileExists($('#rclonePATH').val()))) {
+                    validate.push("O caminho do Rclone não existe");
+                }
+                if ($('#rcloneConfigPATH').val() === "") {
+                    validate.push("Preencha Corretamente o caminho do Rclone Config");
+                } else if (!(await fileExists($('#rcloneConfigPATH').val()))) {
+                    validate.push("O arquivo de configuração do Rclone não existe");
+                }
+
+                validate.forEach(function (option) {
+                    text += option + "\n";
+                });
+                return text;
+            }
+
+            async function saveConfig() {
+                try {
+                    Dashboard.showLoadingMsg();
+                    disableInputs();
+                    let validate = await saveValidate();
+                    if (validate != "") {
+                        throw new Error(validate);
+                    }
+                    console.log("Salvando Configurações");
+                    let config = await ApiClient.getPluginConfiguration(GenerateStrmConfig.pluginUniqueId);
+                    config.rcloneServeIP = $('#rcloneServeIp').val();
+                    config.rcloneServePort = $('#rcloneServePort').val();
+                    config.rcloneRcPort = $('#rcloneRcPort').val();
+                    config.rclonePATH = $('#rclonePATH').val();
+                    config.rcloneConfigPATH = $('#rcloneConfigPATH').val();
+                    config.rcloneMediaPATH = $('#rcloneMediaPATH').val();
+                    config.rcloneRemoteDrive = $('#rcloneRemoteDrive').val();
+                    config.rcloneDrivePATH = $('#rcloneDrivePATH').val();
+                    let result = await ApiClient.updatePluginConfiguration(GenerateStrmConfig.pluginUniqueId, config);
+                    Dashboard.processPluginConfigurationUpdateResult(result);
+                    console.log("Configurações Salvas");
+                } catch (error) {
+                    console.error(error);
+                    Dashboard.processErrorResponse({ statusText: error.message });
+                } finally {
+                    Dashboard.hideLoadingMsg();
+                    enableInputs();
+                }
+            }
+
+            async function atualizarDrives() {
+                try {
+                    Dashboard.showLoadingMsg();
+                    let validate = await atualizarDrivesValidate();
+                    if (validate != "") {
+                        throw new Error(validate);
+                    }
+                    let rcloneDrives = await getRcloneDrives($('#rclonePATH').val(), $('#rcloneConfigPATH').val());
+                    if (rcloneDrives.length == 0) {
+                        throw new Error("Não foi possível encontrar nenhum drive no Rclone");
+                    }
+                    let selectDrives = $('#rcloneRemoteDrive');
+                    selectDrives.find('option').each(function () {
+                        if ($(this).val() != "") {
+                            $(this).remove();
+                        }
+                    });
+                    rcloneDrives.forEach(function (option) {
+                        let optionElement = document.createElement('option');
+                        optionElement.value = option.drive;
+                        optionElement.text = option.drive;
+                        selectDrives.append(optionElement);
+                    });
+                    Dashboard.alert("Lista de Drives Atualizados");
+                } catch (error) {
+                    Dashboard.processErrorResponse({ statusText: error.message });
+                } finally {
+                    Dashboard.hideLoadingMsg();
+                }
+            }
+
+            $('#GenerateStrmConfigPage').on('pageshow', _init);
+            $('#GenerateStrmConfigPage').on('submit', e => e.preventDefault());
+            $('#saveConfig').on('click', saveConfig);
+            $('#atualizarDrives').on('click', atualizarDrives);
+        </script>
+    </div>
+</body>
+
+</html>
