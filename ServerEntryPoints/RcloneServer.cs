@@ -60,7 +60,7 @@ namespace GenerateStrmFromRclone.ServerEntryPoints
         {
             PluginConfiguration config = Plugin.Instance!.Configuration;
             if (
-                Rclone.CheckConfiguration(config.rclonePATH, config.rcloneConfigPATH, config.rcloneRemoteDrive, config.rcloneDrivePATH) &&
+                config.rcloneOption == "automatic" && Rclone.CheckConfiguration(config.rclonePATH, config.rcloneConfigPATH, config.rcloneRemoteDrive, config.rcloneDrivePATH) &&
                 config.rcloneServeIP != null
             )
             {
@@ -104,7 +104,7 @@ namespace GenerateStrmFromRclone.ServerEntryPoints
                     this.rcloneHTTPProcess = null;
                 }
             }
-            else
+            else if (config.rcloneOption == "automatic")
             {
                 _logger.LogError("Configure para poder iniciar, após configurar reinicie o servidor");
             }

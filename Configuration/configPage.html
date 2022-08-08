@@ -13,6 +13,14 @@
             <div class="content-primary">
                 <form id="GenerateStrmConfigForm">
                     <h3>Server</h3>
+                    <div id="selectOption" class="selectContainer">
+                        <label class="selectLabel" for="rcloneOption">Modo de funcionamento</label>
+                        <select is="emby-select" id="rcloneOption" name="rcloneOption"
+                            class="emby-select-withcolor emby-select" onchange="onSelectOptionChange()">
+                            <option value="manual" selected>Manual</option>
+                            <option value="automatic">Automático</option>
+                        </select>
+                    </div>
                     <div id="selectServerIp" class="selectContainer">
                         <label class="selectLabel" for="rcloneServeIp">IP (Rclone serve)</label>
                         <select is="emby-select" id="rcloneServeIp" name="rcloneServeIp"
@@ -31,16 +39,17 @@
                         <input id="rcloneRcPort" name="rcloneRcPort" type="number" is="emby-input" />
                     </div>
                     <h3>Rclone Config</h3>
-                    <div class="inputContainer">
-                        <label class="inputeLabel inputLabelUnfocused" for="rclonePATH">Diretorio do rclone: </label>
-                        <input id="rclonePATH" name="rclonePATH" type="text" is="emby-input" />
+                    <div id="rcloneConfig">
+                        <div class="inputContainer">
+                            <label class="inputeLabel inputLabelUnfocused" for="rclonePATH">Diretorio do rclone: </label>
+                            <input id="rclonePATH" name="rclonePATH" type="text" is="emby-input" />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputeLabel inputLabelUnfocused" for="rcloneConfigPATH">Arquivo de configuração
+                                rclone: </label>
+                            <input id="rcloneConfigPATH" name="rcloneConfigPATH" type="text" is="emby-input" />
+                        </div>
                     </div>
-                    <div class="inputContainer">
-                        <label class="inputeLabel inputLabelUnfocused" for="rcloneConfigPATH">Arquivo de configuração
-                            rclone: </label>
-                        <input id="rcloneConfigPATH" name="rcloneConfigPATH" type="text" is="emby-input" />
-                    </div>
-
                     <div class="inputContainer">
                         <label class="inputeLabel inputLabelUnfocused" for="rcloneMediaPATH">Caminho onde os arquivos
                             STRM serão salvos</label>
@@ -97,6 +106,20 @@
                     return json;
                 }
             }
+
+            async function getRcloneDrivesByRc(rcloneRcPort) {
+                if (rcloneRcPort == null) {
+                    return [];
+                } else {
+                    let result = await ApiClient.fetch({
+                        url: ApiClient.getUrl('/GenerateStrmFromRclone/getRcloneDrives?' + encodeURIComponent("rcloneRcPort=" + rcloneRcPort)),
+                        type: 'GET',
+                    });
+                    let json = await result.json();
+                    return json;
+                }
+            }
+
             async function _init() {
                 config = await ApiClient.getPluginConfiguration(GenerateStrmConfig.pluginUniqueId);
                 try {
@@ -106,13 +129,20 @@
                         type: 'GET',
                         headers: { accept: "application/json" }
                     });
-                    let rcloneDrives = await getRcloneDrives(config.rclonePATH, config.rcloneConfigPATH);
-
+                    let rcloneDrives = [];
+                    if ($('#rcloneOption').val() === "automatic") {
+                        rcloneDrives = await getRcloneDrives(config.rclonePATH, config.rcloneConfigPATH);
+                    }else if ($('#rcloneOption').val() === "manual") {
+                        rcloneDrives = await getRcloneDrivesByRc(config.rcloneRcPort);
+                    }
                     $('#rcloneServeIpCustom').val(config.rcloneServeIP ?? "");
                     $('#rcloneServePort').val(config.rcloneServePort ?? "");
                     $('#rcloneRcPort').val(config.rcloneRcPort ?? "");
-                    $('#rclonePATH').val(config.rclonePATH ?? "");
-                    $('#rcloneConfigPATH').val(config.rcloneConfigPATH ?? "");
+                    $('#rcloneOption').val(config.rcloneOption).change();
+                    if ($('#rcloneOption').val() === "automatic") {
+                        $('#rclonePATH').val(config.rclonePATH ?? "");
+                        $('#rcloneConfigPATH').val(config.rcloneConfigPATH ?? "");
+                    }
                     $('#rcloneDrivePATH').val(config.rcloneDrivePATH ?? "");
                     $('#rcloneMediaPATH').val(config.rcloneMediaPATH ?? "");
 
@@ -156,12 +186,27 @@
                 }
             }
 
-            function disableInputs() {
+            function onSelectOptionChange() {
+                let selectInterfaces = $("#rcloneOption");
+                if (selectInterfaces.val() === "automatic") {
+                    $('#rcloneConfig').append('<div class="inputContainer"><label class="inputeLabel inputLabelUnfocused" for="rclonePATH">Diretorio do rclone: </label><input id="rclonePATH" name="rclonePATH" type="text" is="emby-input" /></div>');
+                    $('#rcloneConfig').append('<div class="inputContainer"><label class="inputeLabel inputLabelUnfocused" for="rcloneConfigPATH">Arquivo de configuraçãorclone: </label><input id="rcloneConfigPATH" name="rcloneConfigPATH" type="text" is="emby-input" /></div>');
+                    
+                    $('#rclonePATH').val(config.rclonePATH ?? "");
+                    $('#rcloneConfigPATH').val(config.rcloneConfigPATH ?? "");
+                } else if(selectInterfaces.val() === "manual") {
+                    $('#rcloneConfig > .inputContainer').remove();
+                }
+            }
+
+            function disableInputs() { 
                 $('#rcloneServeIp').prop('disabled', true);
                 $('#rcloneServePort').prop('disabled', true);
                 $('#rcloneRcPort').prop('disabled', true);
-                $('#rclonePATH').prop('disabled', true);
-                $('#rcloneConfigPATH').prop('disabled', true);
+                if ($('#rcloneOption').val() === "automatic") {
+                    $('#rclonePATH').prop('disabled', true);
+                    $('#rcloneConfigPATH').prop('disabled', true);
+                }
                 $('#rcloneDrivePATH').prop('disabled', true);
                 $('#rcloneMediaPATH').prop('disabled', true);
                 $('#rcloneRemoteDrive').prop('disabled', true);
@@ -173,8 +218,10 @@
                 $('#rcloneServeIp').prop('disabled', false);
                 $('#rcloneServePort').prop('disabled', false);
                 $('#rcloneRcPort').prop('disabled', false);
-                $('#rclonePATH').prop('disabled', false);
-                $('#rcloneConfigPATH').prop('disabled', false);
+                if ($('#rcloneOption').val() === "automatic") {
+                    $('#rclonePATH').prop('disabled', false);
+                    $('#rcloneConfigPATH').prop('disabled', false);
+                }
                 $('#rcloneDrivePATH').prop('disabled', false);
                 $('#rcloneMediaPATH').prop('disabled', false);
                 $('#rcloneRemoteDrive').prop('disabled', false);
@@ -209,65 +256,74 @@
                 return json.exists;
             }
 
+            async function driveExistsByRc(rcloneRcPort, drive, path) {
+                let result = await ApiClient.fetch({
+                    url: ApiClient.getUrl('/GenerateStrmFromRclone/driveExists?' + encodeURIComponent("rcloneRcPort=" + rcloneRcPort + "&drive=" + drive + (path == null | typeof path === "undefined" ? "" : "&drivePath=" + path))),
+                    type: 'GET',
+                });
+                let json = await result.json();
+                return json.exists;
+            }
+
             async function saveValidate() {
                 let text = "";
-                let validate = [];
                 if ($('#rcloneServeIp').val() === "" && $('#rcloneServeIpCustom').val() === "") {
-                    validate.push("Preencha Corretamente o IP do servidor");
+                    text += "Preencha Corretamente o IP do servidor" + "\n";
                 }
                 if ($('#rcloneServePort').val() === "") {
-                    validate.push("Preencha Corretamente a Porta do Rclone Server");
+                    text += "Preencha Corretamente a Porta do Rclone Server" + "\n";
                 }
                 if ($('#rcloneRcPort').val() === "") {
-                    validate.push("Preencha Corretamente a Porta do Rclone Rc");
-                }
-                if ($('#rclonePATH').val() === "") {
-                    validate.push("Preencha Corretamente o caminho do Rclone");
-                } else if (!(await fileExists($('#rclonePATH').val()))) {
-                    validate.push("O caminho do Rclone não existe");
-                }
-                if ($('#rcloneConfigPATH').val() === "") {
-                    validate.push("Preencha Corretamente o caminho do Rclone Config");
-                } else if (!(await fileExists($('#rcloneConfigPATH').val()))) {
-                    validate.push("O arquivo de configuração do Rclone não existe");
-                }
-                if ($('#rcloneMediaPATH').val() === "") {
-                    validate.push("Preencha Corretamente o caminho dos STRMs");
-                } else if (!(await folderExists($('#rcloneMediaPATH').val()))) {
-                    validate.push("O caminho dos STRMs não existe");
-                }
-                if ($('#rcloneRemoteDrive').val() === "") {
-                    validate.push("Selecione um Drive Remoto");
-                } else if (!(await driveExists($('#rclonePATH').val(), $('#rcloneConfigPATH').val(), $('#rcloneRemoteDrive').val()))) {
-                    validate.push("O Drive Remoto não existe, atualize a lista de Drives");
-                }
-                if (!(await driveExists($('#rclonePATH').val(), $('#rcloneConfigPATH').val(), $('#rcloneRemoteDrive').val(), $('#rcloneDrivePATH').val()))) {
-                    validate.push("O caminho do Drive Remoto não existe");
+                    text += "Preencha Corretamente a Porta do Rclone Rc" + "\n";
                 }
 
-                validate.forEach(function (option) {
-                    text += option + "\n";
-                });
+                if ($('#rcloneOption').val() === "automatic") {
+                    if ($('#rclonePATH').val() === "") {
+                        text += "Preencha Corretamente o caminho do Rclone" + "\n";
+                    } else if (!(await fileExists($('#rclonePATH').val()))) {
+                        text += "O caminho do Rclone não existe" + "\n";
+                    }
+                    if ($('#rcloneConfigPATH').val() === "") {
+                        text += "Preencha Corretamente o caminho do Rclone Config" + "\n";
+                    } else if (!(await fileExists($('#rcloneConfigPATH').val()))) {
+                        text += "O arquivo de configuração do Rclone não existe" + "\n";
+                    }
+                }
+                if ($('#rcloneMediaPATH').val() === "") {
+                    text += "Preencha Corretamente o caminho dos STRMs" + "\n";
+                } else if (!(await folderExists($('#rcloneMediaPATH').val()))) {
+                    text += "O caminho dos STRMs não existe" + "\n";
+                }
+                if ($('#rcloneRemoteDrive').val() === "") {
+                    text += "Selecione um Drive Remoto" + "\n";
+                } else{
+                    if ($('#rcloneOption').val() === "automatic" && !(await driveExists($('#rclonePATH').val(), $('#rcloneConfigPATH').val(), $('#rcloneRemoteDrive').val()))) {
+                        text += "O Drive Remoto não existe, atualize a lista de Drives" + "\n";
+                    } else if ($('#rcloneOption').val() === "manual" && !(await driveExistsByRc($('#rcloneRcPort').val(), $('#rcloneRemoteDrive').val()))){
+                        text += "O Drive Remoto não existe, atualize a lista de Drives" + "\n";
+                    }
+                }
+                if ($('#rcloneOption').val() === "automatic" && !(await driveExists($('#rclonePATH').val(), $('#rcloneConfigPATH').val(), $('#rcloneRemoteDrive').val(), $('#rcloneDrivePATH').val()))) {
+                    text += "O caminho do Drive Remoto não existe" + "\n";
+                } else if ($('#rcloneOption').val() === "manual" && !(await driveExistsByRc($('#rcloneRcPort').val(), $('#rcloneRemoteDrive').val(), $('#rcloneDrivePATH').val()))){
+                    text += "O caminho do Drive Remoto não existe" + "\n";
+                }
                 return text;
             }
             async function atualizarDrivesValidate() {
                 let text = "";
-                let validate = [];
-
-                if ($('#rclonePATH').val() === "") {
-                    validate.push("Preencha Corretamente o caminho do Rclone");
-                } else if (!(await fileExists($('#rclonePATH').val()))) {
-                    validate.push("O caminho do Rclone não existe");
+                if ($('#rcloneOption').val() === "automatic") {
+                    if ($('#rclonePATH').val() === "") {
+                        text += "Preencha Corretamente o caminho do Rclone" + "\n";
+                    } else if (!(await fileExists($('#rclonePATH').val()))) {
+                        text += "O caminho do Rclone não existe" + "\n";
+                    }
+                    if ($('#rcloneConfigPATH').val() === "") {
+                        text += "Preencha Corretamente o caminho do Rclone Config" + "\n";
+                    } else if (!(await fileExists($('#rcloneConfigPATH').val()))) {
+                        text += "O arquivo de configuração do Rclone não existe" + "\n";
+                    }
                 }
-                if ($('#rcloneConfigPATH').val() === "") {
-                    validate.push("Preencha Corretamente o caminho do Rclone Config");
-                } else if (!(await fileExists($('#rcloneConfigPATH').val()))) {
-                    validate.push("O arquivo de configuração do Rclone não existe");
-                }
-
-                validate.forEach(function (option) {
-                    text += option + "\n";
-                });
                 return text;
             }
 
@@ -284,8 +340,11 @@
                     config.rcloneServeIP = $('#rcloneServeIp').val() != "" ? $('#rcloneServeIp').val() : $('#rcloneServeIpCustom').val();
                     config.rcloneServePort = $('#rcloneServePort').val();
                     config.rcloneRcPort = $('#rcloneRcPort').val();
-                    config.rclonePATH = $('#rclonePATH').val();
-                    config.rcloneConfigPATH = $('#rcloneConfigPATH').val();
+                    config.rcloneOption = $('#rcloneOption').val();
+                    if ($('#rcloneOption').val() === "automatic"){
+                        config.rclonePATH = $('#rclonePATH').val();
+                        config.rcloneConfigPATH = $('#rcloneConfigPATH').val();
+                    }
                     config.rcloneMediaPATH = $('#rcloneMediaPATH').val();
                     config.rcloneRemoteDrive = $('#rcloneRemoteDrive').val();
                     config.rcloneDrivePATH = $('#rcloneDrivePATH').val();
@@ -308,7 +367,13 @@
                     if (validate != "") {
                         throw new Error(validate);
                     }
-                    let rcloneDrives = await getRcloneDrives($('#rclonePATH').val(), $('#rcloneConfigPATH').val());
+
+                    let rcloneDrives = [];
+                    if ($('#rcloneOption').val() === "automatic") {
+                        rcloneDrives = await getRcloneDrives($('#rclonePATH').val(), $('#rcloneConfigPATH').val());
+                    }else if ($('#rcloneOption').val() === "manual") {
+                        rcloneDrives = await getRcloneDrivesByRc($('#rcloneRcPort').val());
+                    }
                     if (rcloneDrives.length == 0) {
                         throw new Error("Não foi possível encontrar nenhum drive no Rclone");
                     }

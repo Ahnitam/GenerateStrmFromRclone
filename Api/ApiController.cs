@@ -47,19 +47,35 @@ namespace GenerateStrmFromRclone.Api
         [HttpGet("getRcloneDrives")]
         [ProducesResponseType(typeof(List<Dictionary<string, dynamic?>>), StatusCodes.Status200OK)]
         [Produces(MediaTypeNames.Application.Json)]
-        public IActionResult GetRcloneDrives([FromQuery] string rclone, [FromQuery] string rcloneConfig)
+        public IActionResult GetRcloneDrives([FromQuery] string? rclone, [FromQuery] string? rcloneConfig, [FromQuery] string? rcloneRcPort)
         {
-            return Ok(Rclone.GetRcloneDrives(rclone, rcloneConfig));
+            if (rclone != null && rcloneConfig != null)
+            {
+                return Ok(Rclone.GetRcloneDrives(rclone, rcloneConfig));
+            }else if (rcloneRcPort != null)
+            {
+                return Ok(Rclone.GetRcloneDrives(rcloneRcPort));
+            }else {
+                return BadRequest();
+            }   
         }
 
         [HttpGet("driveExists")]
         [ProducesResponseType(typeof(Dictionary<string, bool>), StatusCodes.Status200OK)]
         [Produces(MediaTypeNames.Application.Json)]
-        public IActionResult DriveExist([FromQuery] string rclone, [FromQuery] string rcloneConfig, [FromQuery] string drive, [FromQuery] string? drivePath)
+        public IActionResult DriveExist([FromQuery] string? rclone, [FromQuery] string? rcloneConfig, [FromQuery] string drive, [FromQuery] string? drivePath, [FromQuery] string? rcloneRcPort)
         {
-            return Ok(new Dictionary<string, bool> {
-                { "exists", Rclone.CheckConfiguration(rclone, rcloneConfig, drive, drivePath) }
-            });
+            if (rclone != null && rcloneConfig != null){
+                return Ok(new Dictionary<string, bool> {
+                    { "exists", Rclone.CheckConfiguration(rclone, rcloneConfig, drive, drivePath) }
+                });
+            } else if(rcloneRcPort != null){
+                return Ok(new Dictionary<string, bool> {
+                    { "exists", Rclone.CheckConfiguration(rcloneRcPort, drive, drivePath) }
+                });
+            } else {
+                return BadRequest();
+            }   
         }
 
         [HttpGet("folderExists")]
