@@ -47,12 +47,9 @@ namespace GenerateStrmFromRclone.Api
         [HttpGet("getRcloneDrives")]
         [ProducesResponseType(typeof(List<Dictionary<string, dynamic?>>), StatusCodes.Status200OK)]
         [Produces(MediaTypeNames.Application.Json)]
-        public IActionResult GetRcloneDrives([FromQuery] string? rclone, [FromQuery] string? rcloneConfig, [FromQuery] string? rcloneRcPort)
+        public IActionResult GetRcloneDrives([FromQuery] string? rcloneRcPort)
         {
-            if (rclone != null && rcloneConfig != null)
-            {
-                return Ok(Rclone.GetRcloneDrives(rclone, rcloneConfig));
-            }else if (rcloneRcPort != null)
+            if (rcloneRcPort != null)
             {
                 return Ok(Rclone.GetRcloneDrives(rcloneRcPort));
             }else {
@@ -63,13 +60,9 @@ namespace GenerateStrmFromRclone.Api
         [HttpGet("driveExists")]
         [ProducesResponseType(typeof(Dictionary<string, bool>), StatusCodes.Status200OK)]
         [Produces(MediaTypeNames.Application.Json)]
-        public IActionResult DriveExist([FromQuery] string? rclone, [FromQuery] string? rcloneConfig, [FromQuery] string drive, [FromQuery] string? drivePath, [FromQuery] string? rcloneRcPort)
+        public IActionResult DriveExist([FromQuery] string drive, [FromQuery] string? drivePath, [FromQuery] string? rcloneRcPort)
         {
-            if (rclone != null && rcloneConfig != null){
-                return Ok(new Dictionary<string, bool> {
-                    { "exists", Rclone.CheckConfiguration(rclone, rcloneConfig, drive, drivePath) }
-                });
-            } else if(rcloneRcPort != null){
+            if(rcloneRcPort != null){
                 return Ok(new Dictionary<string, bool> {
                     { "exists", Rclone.CheckConfiguration(rcloneRcPort, drive, drivePath) }
                 });
