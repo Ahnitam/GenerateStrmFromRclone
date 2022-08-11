@@ -1,4 +1,3 @@
-using System.Net;
 using System.Net.Mime;
 using GenerateStrmFromRclone.Manager;
 using Microsoft.AspNetCore.Authorization;
@@ -20,55 +19,23 @@ namespace GenerateStrmFromRclone.Api
         {
             _logger = logger;
         }
-        [HttpGet("getNetworksInterfaces")]
-        [ProducesResponseType(typeof(List<Dictionary<string, dynamic?>>), StatusCodes.Status200OK)]
-        [Produces(MediaTypeNames.Application.Json)]
-        public IActionResult GetNetworksInterfaces()
-        {
-            List<Dictionary<string, dynamic?>> interfaces = new List<Dictionary<string, dynamic?>>();
-            try
-            {
-                foreach (var ip in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
-                {
-                    interfaces.Add(new Dictionary<string, dynamic?> {
-                        { "address", ip.ToString() },
-                        { "addressFamily", ip.AddressFamily.ToString() }
-                    });
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e.ToString(), e);
-            }
-            
-            return Ok(interfaces);
-        }
-
+        
         [HttpGet("getRcloneDrives")]
         [ProducesResponseType(typeof(List<Dictionary<string, dynamic?>>), StatusCodes.Status200OK)]
         [Produces(MediaTypeNames.Application.Json)]
-        public IActionResult GetRcloneDrives([FromQuery] string? rcloneRcPort)
+        public IActionResult GetRcloneDrives([FromQuery] string rcloneRcUrl, [FromQuery] string? rcloneAuth)
         {
-            if (rcloneRcPort != null)
-            {
-                return Ok(Rclone.GetRcloneDrives(rcloneRcPort));
-            }else {
-                return BadRequest();
-            }   
+            return Ok(Rclone.GetRcloneDrives(rcloneRcUrl, rcloneAuth));   
         }
 
         [HttpGet("driveExists")]
         [ProducesResponseType(typeof(Dictionary<string, bool>), StatusCodes.Status200OK)]
         [Produces(MediaTypeNames.Application.Json)]
-        public IActionResult DriveExist([FromQuery] string drive, [FromQuery] string? drivePath, [FromQuery] string? rcloneRcPort)
+        public IActionResult DriveExist([FromQuery] string rcloneRcUrl, [FromQuery] string? rcloneAuth, [FromQuery] string drive, [FromQuery] string? drivePath)
         {
-            if(rcloneRcPort != null){
-                return Ok(new Dictionary<string, bool> {
-                    { "exists", Rclone.CheckConfiguration(rcloneRcPort, drive, drivePath) }
-                });
-            } else {
-                return BadRequest();
-            }   
+            return Ok(new Dictionary<string, bool> {
+                { "exists", Rclone.CheckConfiguration(rcloneRcUrl, rcloneAuth, drive, drivePath) }
+            });   
         }
 
         [HttpGet("folderExists")]
@@ -80,25 +47,6 @@ namespace GenerateStrmFromRclone.Api
             {
                 return Ok(new Dictionary<string, bool> {
                     { "exists", Directory.Exists(folder) }
-                });
-            }
-            catch (System.Exception)
-            {
-                return Ok(new Dictionary<string, bool> {
-                    { "exists", false }
-                });
-            }
-        }
-
-        [HttpGet("fileExists")]
-        [ProducesResponseType(typeof(Dictionary<string, bool>), StatusCodes.Status200OK)]
-        [Produces(MediaTypeNames.Application.Json)]
-        public IActionResult FileExists([FromQuery] string file)
-        {
-            try
-            {
-                return Ok(new Dictionary<string, bool> {
-                    { "exists", System.IO.File.Exists(file) }
                 });
             }
             catch (System.Exception)

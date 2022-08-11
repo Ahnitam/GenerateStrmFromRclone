@@ -10,14 +10,18 @@ namespace GenerateStrmFromRclone.Manager
     public class Rclone
     {
 
-        public static List<Dictionary<string, dynamic?>> GetRcloneDrives(string rcloneRcPort)
+        public static List<Dictionary<string, dynamic?>> GetRcloneDrives(string rcloneRcUrl, string? rcloneAuth)
         {
             try
             {
                 List<Dictionary<string, dynamic?>> drives = new List<Dictionary<string, dynamic?>>();
                 using (var client = new HttpClient())
                 {
-                    client.BaseAddress = new Uri($"http://localhost:{rcloneRcPort}");
+                    if (rcloneAuth != null)
+                    {
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", rcloneAuth);
+                    }
+                    client.BaseAddress = new Uri(rcloneRcUrl);
                     var response = client.PostAsync("/config/listremotes", null).Result;
                     var content = JsonDocument.Parse(response.Content.ReadAsStringAsync().Result);
 
@@ -42,17 +46,17 @@ namespace GenerateStrmFromRclone.Manager
             }
         }
 
-        public static bool CheckConfiguration(string? rcloneRcPort, string? rcloneRemoteDrive, string? rcloneDrivePATH)
+        public static bool CheckConfiguration(string rcloneRcUrl, string? rcloneAuth, string rcloneRemoteDrive, string? rcloneDrivePATH)
         {
             try
             {
-                if (rcloneRcPort == null || rcloneRemoteDrive == null)
-                {
-                    throw new Exception();
-                }
                 using (var client = new HttpClient())
                 {
-                    client.BaseAddress = new Uri($"http://localhost:{rcloneRcPort}");
+                    if (rcloneAuth != null)
+                    {
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", rcloneAuth);
+                    }
+                    client.BaseAddress = new Uri(rcloneRcUrl);
                     var body = new JsonObject {
                         { "fs", rcloneRemoteDrive },
                         { "remote", rcloneDrivePATH ?? "" },

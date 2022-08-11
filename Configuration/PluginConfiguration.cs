@@ -6,16 +6,18 @@ namespace GenerateStrmFromRclone.Configuration
     {
         public PluginConfiguration()
         {
-            rcloneServeIP = null;
-            rcloneServePort = 5000;
-            rcloneRcPort = 5572;
+            rcloneServeUrl = null;
+            rcloneRcUrl = null;
+            rcloneAuthType = null;
+            rcloneAuth = null;
             rcloneMediaPATH = null;
             rcloneRemoteDrive = null;
             rcloneDrivePATH = "";
         }
-        public string? rcloneServeIP { get; set; }
-        public int rcloneServePort { get; set; }
-        public int rcloneRcPort { get; set; }
+        public string? rcloneServeUrl { get; set; }
+        public string? rcloneRcUrl { get; set; }
+        public string? rcloneAuthType { get; set; }
+        public string? rcloneAuth { get; set; }
         public string? rcloneRemoteDrive { get; set; }
         public string rcloneDrivePATH { get; set; }
         public string? rcloneMediaPATH { get; set; }

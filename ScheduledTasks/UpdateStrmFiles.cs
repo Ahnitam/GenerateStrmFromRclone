@@ -10,7 +10,7 @@ using System.Net;
 using System.Text.Json.Nodes;
 using GenerateStrmFromRclone.Model;
 using MediaBrowser.Controller;
-
+using GenerateStrmFromRclone.Utils;
 namespace GenerateStrmFromRclone.ScheduledTasks
 {
     public class UpdateStrmFiles : IScheduledTask
@@ -29,54 +29,20 @@ namespace GenerateStrmFromRclone.ScheduledTasks
             _xmlSerializer = xmlSerializer;
             _serverApplicationPaths = serverApplicationPaths;
         }
-
-        protected string validateDrivePath(string path)
-        {
-            string temp = path.Trim();
-            bool initWithBarra = temp.StartsWith("/");
-            bool endWithBarra = temp.EndsWith("/");
-
-            if (initWithBarra && endWithBarra)
-            {
-                temp = path.Trim(new char[] { ' ', '/' });
-            }
-            else if (initWithBarra)
-            {
-                temp = path.TrimStart(new char[] { ' ', '/' });
-            }
-            else if (endWithBarra)
-            {
-                temp = path.TrimEnd(new char[] { ' ', '/' });
-            }
-            else
-            {
-                temp = path;
-            }
-            return temp;
-        }
-
-        private string ValidateIp(string Ip)
-        {
-            if (Ip.Contains(":") && !Ip.Contains("[") && !Ip.Contains("]"))
-            {
-                return "[" + Ip + "]";
-            }
-            else
-            {
-                return Ip;
-            }
-        }
-
         public Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
         {
             var config = Plugin.Instance!.Configuration;
-            string rcloneDrivePATH = validateDrivePath(config.rcloneDrivePATH);
+            string rcloneDrivePATH = Validate.drivePath(config.rcloneDrivePATH);
             using (var client = new HttpClient())
             {
                 try
                 {
                     progress.Report(5);
-                    client.BaseAddress = new Uri($"http://localhost:{config.rcloneRcPort}");
+                    if (config.rcloneAuthType == "email_senha" && config.rcloneAuth != null)
+                    {
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", config.rcloneAuth);
+                    }
+                    client.BaseAddress = new Uri(config.rcloneRcUrl!);
                     var body = new JsonObject {
                         { "fs", config.rcloneRemoteDrive },
                         { "remote", rcloneDrivePATH },
@@ -147,7 +113,7 @@ namespace GenerateStrmFromRclone.ScheduledTasks
                                 {
                                     Directory.CreateDirectory(Path.GetDirectoryName(newFilePathLocal)!);
                                 }
-                                string url = $"http://{ValidateIp(config.rcloneServeIP!)}:{config.rcloneServePort}/{HttpUtility.UrlPathEncode(Path.Join(newFilePath, newFileName + newFileExtension))}";
+                                string url = $"{Validate.url(config.rcloneServeUrl!)}/{HttpUtility.UrlPathEncode(Path.Join(Path.GetDirectoryName(newFile.GetProperty("Path").GetString()), newFileName + newFileExtension))}";
                                 using (StreamWriter sw = File.CreateText(newFilePathLocal))
                                 {
                                     sw.WriteLine(url);
